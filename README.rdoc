@@ -60,7 +60,7 @@ Authorizer::Base.remove_authorization( :object => object )
  
 Find all objects that the current user is authorized to use
 
-Authorizer::Base.find(:mode => :all, :klazz_name => "Post", :conditions => { :order => "DESC" }) # [ #<Post id: 1>, #<Post id: 2> ]
+Authorizer::Base.find(:mode => :all, :klazz_name => "Post") # [ #<Post id: 1>, #<Post id: 2> ]
 Authorizer::Base.find(:mode => :first, :klazz_name => "Post") #<Post id: 1>
 
 If you are using inherited_resources, you can also use these filters in your controller class:
