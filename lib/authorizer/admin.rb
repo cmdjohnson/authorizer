@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 module Authorizer
   ############################################################################
   # helper class that does administrative functions for you

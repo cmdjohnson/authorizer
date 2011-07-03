@@ -25,9 +25,11 @@ module Authorizer
 
       object = options[:object]
       role = options[:role] || "owner"
-      user = get_current_user
+      user = options[:user] || get_current_user
 
       return false if basic_check_fails?(options)
+
+      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
 
       or_ = find_object_role(object, user)
 
@@ -59,7 +61,10 @@ module Authorizer
       return ret if check
 
       object = options[:object]
-      user = get_current_user
+      user = options[:user] || get_current_user
+
+      # Checks
+      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
 
       or_ = find_object_role(object, user)
         
@@ -91,7 +96,9 @@ module Authorizer
       return ret if basic_check_fails?(options)
 
       object = options[:object]
-      user = get_current_user
+      user = options[:user] || get_current_user
+
+      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
 
       or_ = find_object_role(object, user)
 
@@ -181,6 +188,7 @@ module Authorizer
       ret = nil
       # Checks
       raise "Mode must be one of [ :all, :first ]" unless [ :all, :first ].include?(mode)
+      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
       # Get the real klazz
       klazz = nil
       # Check it
@@ -214,6 +222,8 @@ module Authorizer
     end
 
     def self.find_object_role(object, user)
+      return nil if object.nil? || user.nil?
+    
       klazz_name = object.class.to_s
       object_reference = object.id
 
