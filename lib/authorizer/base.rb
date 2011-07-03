@@ -121,11 +121,20 @@ module Authorizer
     # find
     ############################################################################
     # Out of the collection of all Posts, return the subset that belongs to the current user.
-    # Use :conditions => { :order => "ASC" } to specify additional SQL conditions.
+    # External method that maps to the internal_find which is the generic find method.
+    #
+    # Arguments:
+    #  - class_name: which class to use, e.g. "Post"
+    #  - what: will be passed on to the ActiveRecord find function (e.g. Post.find(what))
+    #  - find_options: will also be passed on (e.g. Post.find(what, find_options))
+    #  - authorizer_options: options for authorizer, e.g. { :user => @user }
     ############################################################################
 
-    def self.find(options = {})
-      internal_find(options)
+    def self.find(class_name, what, find_options = {}, authorizer_options = {})
+      options = { :class_name => class_name, :what => what, :find_options => find_options }
+      my_options = authorizer_options.merge(options) # options overrides user-specified options.
+
+      internal_find(my_options)
     end
 
     ############################################################################
@@ -174,31 +183,38 @@ module Authorizer
       ret
     end
 
+    ############################################################################
+    # internal_find
+    ############################################################################
+    # Extract some info from ObjectRole objects and then pass the info through
+    # to the ActiveRecord finder.
+    ############################################################################
+
     def self.internal_find(options = {})
       # Options
-      OptionsChecker.check(options, [ :mode, :klazz_name ])
+      OptionsChecker.check(options, [ :what, :class_name ])
 
       # assign
-      mode = options[:mode]
-      klazz_name = options[:klazz_name]
+      class_name = options[:class_name]
+      what = options[:what]
       find_options = options[:find_options] || {}
-      custom_conditions = {}
-      # For if the user is looking for specific IDs
-      find_ids = options[:find_ids]
       user = options[:user] || get_current_user
 
+      # We don't do the what checks anymore, ActiveRecord::Base.find does that for us now.
+      #what_checks = [ :all, :first, :last, :id ]
+      #raise "What must be one of #{what_checks.inspect}" unless what_checks.include?(what)
+
+      # Check userrrrrrrrrrrr --- =====================- ---= ===-=- *&((28 @((8
+      check_user(user)
       # rrrr
       ret = nil
       # Checks
-      raise "Mode must be one of [ :all, :first ]" unless [ :all, :first, :last, :id ].include?(mode)
-      # Check
-      check_user(user)
       # Checks done. Let's go.
       # Get the real klazz
       klazz = nil
       # Check it
       begin
-        klazz = eval(klazz_name)
+        klazz = eval(class_name)
       rescue
       end
       # oooo ooo ooo ___ --- === __- --_- ++_+_ =--- +- =+=-=- =-=    <--- ice beam!
@@ -206,29 +222,56 @@ module Authorizer
         # now we know klazz really exists.
         # let's find the object_role objects that match the user and klaz.
         # Get the object_role objects
-        leading_conditions = { :klazz_name => klazz_name, :user_id => user.id }
-        conditions = custom_conditions.merge(leading_conditions)
-        object_roles = ObjectRole.find(:all, :conditions => conditions )
+        object_roles_conditions = { :klazz_name => class_name, :user_id => user.id }
+        object_roles = ObjectRole.find(:all, :conditions => object_roles_conditions )
         # Get a list of IDs. These are objects that are owned by the current_user
         object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
-        # There have to be some object_roles at least.
-        unless object_roles.blank?
+        # Make it at least an array if object_role_ids returns nil
+        object_role_ids ||= []
+        # Try to emulate find as good as we can
+        # so don't skip this, try to always pass it on.
+        unless object_roles.nil?
           # Prepare find_options
-          leading_find_options = {}
+          leading_find_options = {} # insert conventions here if needed
           my_find_options = find_options.merge(leading_find_options)
-          # if statement
-          if mode.eql?(:all)
-            ret = klazz.find(:all, object_role_ids, my_find_options)
-          elsif mode.eql?(:id)
-            raise "Please specify :find_ids when using mode :id" if find_ids.blank?
-            # find_ids is used so the user can specify the IDs he's looking for
-            # otherwise, it will just return all. same behaviour as Rails.
-            ret = klazz.find(find_ids, my_find_options)
-          elsif mode.eql?(:first)
-            ret = klazz.find(object_role_ids.first, my_find_options)
-          elsif mode.eql?(:last)
-            ret = klazz.find(object_role_ids.last, my_find_options)
+          # If the user passed an Array we should filter it with the list of available (authorized) objects.
+          #
+          # http://www.ruby-doc.org/core/classes/Array.html
+          # &
+          # Set Intersection—Returns a new array containing elements common to the two arrays, with no duplicates.
+          safe_what = what
+          if what.is_a?(Array)
+            safe_what = what & object_role_ids
           end
+          # The big show. Let's call out F I N D !!!!!!
+          # INF FINFD FIWI FFIND IF FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+          if safe_what.eql?(:all)
+            ret = klazz.find(:all, my_find_options)
+          elsif safe_what.eql?(:first)
+            ret = klazz.find(object_role_ids.first, my_find_options)
+          elsif safe_what.eql?(:last)
+            ret = klazz.find(object_role_ids.last, my_find_options)
+          else
+            ret = klazz.find(safe_what, my_find_options)
+          end
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
         end
       end
 
