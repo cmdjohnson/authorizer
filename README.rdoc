@@ -69,7 +69,7 @@ If you are using inherited_resources, you can also use these filters in your con
 # own created objects so you can access them after creation
 after_filter :own_created_object, :only => :create
 # authorize entire controller
-before_filter :authorize, :except => [ :create, :index, :new ]
+before_filter :authorize, :only => [ :show, :edit, :update, :destroy ]
 
 This obviously works out of the box with resource-oriented controllers, but with anything different you'll have to make your own choices.
 
