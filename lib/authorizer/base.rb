@@ -29,7 +29,8 @@ module Authorizer
 
       return false if basic_check_fails?(options)
 
-      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
+      check_user(user)
+      # Checks done. Let's go.
 
       or_ = find_object_role(object, user)
 
@@ -64,7 +65,8 @@ module Authorizer
       user = options[:user] || get_current_user
 
       # Checks
-      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
+      check_user(user)
+      # Checks done. Let's go.
 
       or_ = find_object_role(object, user)
         
@@ -98,7 +100,9 @@ module Authorizer
       object = options[:object]
       user = options[:user] || get_current_user
 
-      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
+      # Check
+      check_user(user)
+      # Checks done. Let's go.
 
       or_ = find_object_role(object, user)
 
@@ -183,12 +187,15 @@ module Authorizer
       mode = options[:mode]
       klazz_name = options[:klazz_name]
       custom_conditions = options[:conditions] || {}
+      user = options[:user] || get_current_user
 
       # rrrr
       ret = nil
       # Checks
       raise "Mode must be one of [ :all, :first ]" unless [ :all, :first ].include?(mode)
-      raise "User cannot be nil. Please log in or specify a User object (:user => user)" if user.nil?
+      # Check
+      check_user(user)
+      # Checks done. Let's go.
       # Get the real klazz
       klazz = nil
       # Check it
@@ -199,8 +206,7 @@ module Authorizer
       # oooo ooo ooo ___ --- === __- --_- ++_+_ =--- +- =+=-=- =-=    <--- ice beam!
       unless klazz.nil?
         # now we know klazz really exists.
-        # let's find the object_role objects that match the current user and klaz.
-        user = get_current_user
+        # let's find the object_role objects that match the user and klaz.
         # Get the object_role objects
         leading_conditions = { :klazz_name => klazz_name, :user_id => user.id }
         conditions = custom_conditions.merge(leading_conditions)
@@ -223,6 +229,10 @@ module Authorizer
 
     def self.find_object_role(object, user)
       return nil if object.nil? || user.nil?
+
+      # Check
+      check_user(user)
+      # Checks done. Let's go.
     
       klazz_name = object.class.to_s
       object_reference = object.id
@@ -243,9 +253,15 @@ module Authorizer
         end
       end
 
-      unless options[:user].nil?
-        raise "User object must be saved" if !options[:user].is_a?(ActiveRecord::Base) || options[:user].new_record?
-      end
+      ret
+    end
+
+    def self.check_user(user)
+      ret = true
+
+      raise "User cannot be nil" if user.nil?
+      raise "User must inherit from ActiveRecord::Base" unless user.is_a?(ActiveRecord::Base)
+      raise "User must be saved" if user.new_record?
 
       ret
     end
