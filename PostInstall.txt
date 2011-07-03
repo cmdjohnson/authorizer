@@ -1,0 +1,7 @@
+Remaining installation steps: (1 and 2 already done!)
+
+ 3. generate the migration by running "script/generate authorizer_migration"
+ 4. run "rake db:migrate" to migrate your database
+ 5. Add observers to 'config/environment.rb'
+ 
+config.active_record.observers = "Authorizer::UserObserver", "Authorizer::ObjectObserver"

@@ -1,0 +1,157 @@
+= authorizer
+
+* https://github.com/cmdjohnson/authorizer
+
+== DESCRIPTION:
+
+Authorizer is a gem for Ruby (in conjunction with Rails 2.3) that does authorization for you on a per-object basis. What makes this gem different from e.g. declarative_authorization and cancan is they define one role for the entire application. With Authorizer, you define roles for different users on every Rails object.
+
+Let's use a Dropbox analogy.
+
+With Dropbox, you can choose which folder you want to share. For instance:
+
+Al has a home folder with these subfolders in it:
+ - Music (shared with Bob)
+ - Pictures (shared with Casper and Bob)
+ - News (shared with no-one)
+ 
+This causes Al to have all 3 folders in his Dropbox. Bob has 2 and Casper has only 1 folder called Pictures. 
+
+In other words, a user has access to a subset of the entire collection of folders. Bob has access to 2 of Al's folders, namely Music and Pictures. But he doesn't even see the News folder, nor can he download files from it. 
+
+Bob's access to the two folders is both read and write, so let's call that role "admin". Al is the owner of all 3 folders and has a role called "owner". This leads to the following Roles table:
+
+folder_name	user_name	role
+Music		Al		owner
+		Bob		admin
+Pictures	Al		owner
+		Bob		admin
+		Casper		admin
+News		Al		owner
+
+Now if we would allow Bob to also access the News folder but only read from it, we could add the role called "reader" to the table:
+
+folder_name	user_name	role
+News		Bob		reader
+
+This is exactly what Authorizer does for your Rails application.
+
+== FEATURES/PROBLEMS:
+
+Handles authorization for you.
+
+== SYNOPSIS:
+
+Authorize a user on an object
+
+Authorizer::Base.authorize_user( :object => object )
+
+ => true/false
+
+If you want to know if the current user is authorized on an object, use:
+
+Authorizer::Base.user_is_authorized?( :object => object)
+ => true/false
+ 
+Remove authorization from an object
+
+Authorizer::Base.remove_authorization( :object => object )
+ => true/false
+ 
+Find all objects that the current user is authorized to use
+
+Authorizer::Base.find(:all, "Post", :conditions => { :order => "DESC" }) # [ #<Post id: 1>, #<Post id: 2> ]
+Authorizer::Base.find(:first, "Post") #<Post id: 1>
+
+If you are using inherited_resources, you can also use these filters in your controller class:
+
+# own created objects so you can access them after creation
+after_filter :own_created_object, :only => :create
+# authorize entire controller
+before_filter :authorize, :except => [ :create, :index, :new ]
+
+This obviously works out of the box with resource-oriented controllers, but with anything different you'll have to make your own choices.
+
+If you're just getting started with Authorizer but you already have a running app, you can have one user own all objects with this method:
+
+Authorizer::Admin.create_brand_new_object_roles(:user => User.first)
+
+This method will guess what objects to use by checking for descendants of ActiveRecord::Base.
+
+If you just want to do this for the Post and Category classes, use:
+
+Authorizer::Admin.create_brand_new_object_roles(:user => User.first, :objects => [ "Post", "Category" ])
+
+Authorizer uses ActiveRecord observers to make sure it doesn't make any mess, for instance, when a user is deleted, all of his authorization objects are deleted as well. Should you want more control over this garbage collection process, or if you are a cleanfreak, use this to get rid of any stale authorization objects lying around in your database: (protip: embed into rake task!)
+
+Authorizer::Admin.remove_all_unused_authorization_objects
+
+== REQUIREMENTS:
+
+ - Ruby (this gem was tested with 1.8.7)
+ - Rails 2.3 (tested with 2.3.11 and 2.3.12)
+ - Authlogic (for authentication)
+
+Optional:
+ - inherited_resources if you want to use the controller filters supplied with this gem. Otherwise, you'll have to check for authorization yourself.
+
+== INSTALL:
+
+Installation
+===
+
+ 1. sudo gem install authorizer
+ 2. add "authorizer" to your Gemfile (I hope you've stopped using config.gem already even if you are on Rails 2.3?)
+ 3. generate a migration for authorization objects:
+
+script/generate migration CreateObjectRoles
+
+Paste this code into the newly generated file:
+
+def self.up
+  create_table :object_roles do |t|
+    t.string :klazz_name
+    t.integer :object_reference
+    t.references :user
+    t.string :role
+    
+    t.timestamps
+  end
+end
+
+def self.down
+  drop_table :object_roles
+end
+
+ 4. run "rake db:migrate" to migrate your database
+ 
+That's it!
+
+== DEVELOPERS:
+
+Reviews, patches and bug tickets are welcome!
+
+== LICENSE:
+
+(The MIT License)
+
+Copyright (c) 2011 Commander Johnson <commanderjohnson@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

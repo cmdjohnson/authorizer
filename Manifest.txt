@@ -1,0 +1,17 @@
+History.txt
+Manifest.txt
+PostInstall.txt
+README.rdoc
+Rakefile
+lib/authorizer.rb
+script/console
+script/destroy
+script/generate
+lib/authorizer/admin.rb
+lib/authorizer/application_controller.rb
+lib/authorizer/base.rb
+lib/authorizer/exceptions.rb
+lib/authorizer/object_observer.rb
+lib/authorizer/user_observer.rb
+app/models/object_role.rb
+rails/init.rb
