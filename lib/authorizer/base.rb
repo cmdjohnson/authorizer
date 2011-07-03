@@ -182,13 +182,15 @@ module Authorizer
       mode = options[:mode]
       klazz_name = options[:klazz_name]
       find_options = options[:find_options] || {}
-      custom_conditions =  {}
+      custom_conditions = {}
+      # For if the user is looking for specific IDs
+      find_ids = options[:find_ids]
       user = options[:user] || get_current_user
 
       # rrrr
       ret = nil
       # Checks
-      raise "Mode must be one of [ :all, :first ]" unless [ :all, :first, :last ].include?(mode)
+      raise "Mode must be one of [ :all, :first ]" unless [ :all, :first, :last, :id ].include?(mode)
       # Check
       check_user(user)
       # Checks done. Let's go.
@@ -217,6 +219,11 @@ module Authorizer
           # if statement
           if mode.eql?(:all)
             ret = klazz.find(:all, object_role_ids, my_find_options)
+          elsif mode.eql?(:id)
+            raise "Please specify :find_ids when using mode :id" if find_ids.blank?
+            # find_ids is used so the user can specify the IDs he's looking for
+            # otherwise, it will just return all. same behaviour as Rails.
+            ret = klazz.find(find_ids, my_find_options)
           elsif mode.eql?(:first)
             ret = klazz.find(object_role_ids.first, my_find_options)
           elsif mode.eql?(:last)
