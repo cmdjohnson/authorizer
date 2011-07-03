@@ -124,13 +124,8 @@ module Authorizer
     # Use :conditions => { :order => "ASC" } to specify additional SQL conditions.
     ############################################################################
 
-    def self.find(mode, klazz_name, options = {})
-      my_options = options
-
-      my_options[:mode] = mode
-      my_options[:klazz_name] = klazz_name
-
-      internal_find(my_options)
+    def self.find(options = {})
+      internal_find(options)
     end
 
     ############################################################################
@@ -192,7 +187,7 @@ module Authorizer
       # rrrr
       ret = nil
       # Checks
-      raise "Mode must be one of [ :all, :first ]" unless [ :all, :first ].include?(mode)
+      raise "Mode must be one of [ :all, :first ]" unless [ :all, :first, :last ].include?(mode)
       # Check
       check_user(user)
       # Checks done. Let's go.
@@ -220,6 +215,8 @@ module Authorizer
             ret = klazz.find(:all, object_role_ids)
           elsif mode.eql?(:first)
             ret = klazz.find(object_role_ids.first)
+          elsif mode.eql?(:last)
+            ret = klazz.find(object_role_ids.last)
           end
         end
       end
