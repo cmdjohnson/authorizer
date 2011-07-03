@@ -181,7 +181,8 @@ module Authorizer
       # assign
       mode = options[:mode]
       klazz_name = options[:klazz_name]
-      custom_conditions = options[:conditions] || {}
+      find_options = options[:find_options] || {}
+      custom_conditions =  {}
       user = options[:user] || get_current_user
 
       # rrrr
@@ -210,13 +211,16 @@ module Authorizer
         object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
         # There have to be some object_roles at least.
         unless object_roles.blank?
+          # Prepare find_options
+          leading_find_options = {}
+          my_find_options = find_options.merge(leading_find_options)
           # if statement
           if mode.eql?(:all)
-            ret = klazz.find(:all, object_role_ids)
+            ret = klazz.find(:all, object_role_ids, my_find_options)
           elsif mode.eql?(:first)
-            ret = klazz.find(object_role_ids.first)
+            ret = klazz.find(object_role_ids.first, my_find_options)
           elsif mode.eql?(:last)
-            ret = klazz.find(object_role_ids.last)
+            ret = klazz.find(object_role_ids.last, my_find_options)
           end
         end
       end
