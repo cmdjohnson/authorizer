@@ -132,6 +132,8 @@ That's it!
 
 Reviews, patches and bug tickets are welcome!
 
+{authorizer_project}[https://github.com/cmdjohnson/authorizer_project] is a sample project that shows the usage of the Authorizer gem. It also contains all tests for your testing pleasure.
+
 == LICENSE:
 
 (The MIT License)
