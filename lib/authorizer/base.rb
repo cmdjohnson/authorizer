@@ -310,9 +310,9 @@ module Authorizer
     def self.check_user(user)
       ret = true
 
-      raise "User cannot be nil" if user.nil?
-      raise "User must inherit from ActiveRecord::Base" unless user.is_a?(ActiveRecord::Base)
-      raise "User must be saved" if user.new_record?
+      raise ArgumentError.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?" if user.nil?
+      raise ArgumentError.new "User must inherit from ActiveRecord::Base" unless user.is_a?(ActiveRecord::Base)
+      raise ArgumentError.new "User must be saved" if user.new_record?
 
       ret
     end
