@@ -1,4 +1,10 @@
+=== 0.0.2 2011-07-01
+
+* Minor enhancements:
+  * Improved error messages.
+  * Fixed some small issues.
+
 === 0.0.1 2011-07-01
 
 * 1 major enhancement:
-  * Initial release
+  * Initial release.

@@ -197,81 +197,104 @@ module Authorizer
       class_name = options[:class_name]
       what = options[:what]
       find_options = options[:find_options] || {}
-      user = options[:user] || get_current_user
-
-      # We don't do the what checks anymore, ActiveRecord::Base.find does that for us now.
-      #what_checks = [ :all, :first, :last, :id ]
-      #raise "What must be one of #{what_checks.inspect}" unless what_checks.include?(what)
+      user = options[:user] || get_current_user # Default is current user, but the specified user will override.
 
       # Check userrrrrrrrrrrr --- =====================- ---= ===-=- *&((28 @((8
       check_user(user)
-      # rrrr
       ret = nil
-      # Checks
       # Checks done. Let's go.
       # Get the real klazz
       klazz = nil
       # Check it
       begin
         klazz = eval(class_name)
-      rescue
+      rescue => e
+        # Throw an exception if klazz is nil
+        raise ArgumentError.new("Could not eval class '#{klazz}'. It presumably does not exist. Maybe you mistyped its name? Error was: #{e.inspect}") if klazz.nil?
       end
       # oooo ooo ooo ___ --- === __- --_- ++_+_ =--- +- =+=-=- =-=    <--- ice beam!
       unless klazz.nil?
         # now we know klazz really exists.
-        # let's find the object_role objects that match the user and klaz.
+        # let's find the object_role objects that match the user and klazz.
         # Get the object_role objects
         object_roles_conditions = { :klazz_name => class_name, :user_id => user.id }
         object_roles = ObjectRole.find(:all, :conditions => object_roles_conditions )
-        # Get a list of IDs. These are objects that are owned by the current_user
-        object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
-        # Make it at least an array if object_role_ids returns nil
-        object_role_ids ||= []
-        # Try to emulate find as good as we can
-        # so don't skip this, try to always pass it on.
+        # OK.
+        # We already have the comprehensive list of object roles we are authorized on.
         unless object_roles.nil?
-          # Prepare find_options
-          leading_find_options = {} # insert conventions here if needed
-          my_find_options = find_options.merge(leading_find_options)
-          # If the user passed an Array we should filter it with the list of available (authorized) objects.
-          #
-          # http://www.ruby-doc.org/core/classes/Array.html
-          # &
-          # Set Intersection—Returns a new array containing elements common to the two arrays, with no duplicates.
-          safe_what = what
-          if what.is_a?(Array)
-            safe_what = what & object_role_ids
+          # Get a list of IDs. These are objects that are owned by the current_user
+          object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
+          # Make it at least an array if collect returns nil
+          object_role_ids ||= []
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          # DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT DO IT
+          unless object_role_ids.nil?
+            # Prepare find_options
+            leading_find_options = {} # insert conventions here if needed, maybe for security or other purposes
+            my_find_options = find_options.merge(leading_find_options)
+            # Big chance object_role_ids equals an Empty Array (TM) or []
+            # That's good, it means this line will be
+            #
+            # Post.scoped_by_id([]).find(:all)
+            #
+            # Which will never ever return anything.
+            # This is also good because it means we can just proxy whatever we get from the user into Find and it will take care of it for us.
+            ret = klazz.scoped_by_id(object_role_ids).find(what, my_find_options) # scoped_by is new in 2.3. sweeeeeeeeeeeet
           end
-          # The big show. Let's call out F I N D !!!!!!
-          # INF FINFD FIWI FFIND IF FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-          if safe_what.eql?(:all)
-            ret = klazz.find(:all, my_find_options)
-          elsif safe_what.eql?(:first)
-            ret = klazz.find(object_role_ids.first, my_find_options)
-          elsif safe_what.eql?(:last)
-            ret = klazz.find(object_role_ids.last, my_find_options)
-          else
-            ret = klazz.find(safe_what, my_find_options)
-          end
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
         end
+
+        #        # Let's go
+        #        unless object_roles.nil?
+        #          # Make it at least an array if object_role_ids returns nil
+        #          object_role_ids ||= []
+        #          # Get a list of IDs. These are objects that are owned by the current_user
+        #          object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
+        #          # Prepare find_options
+        #          leading_find_options = {} # insert conventions here if needed
+        #          my_find_options = find_options.merge(leading_find_options)
+        #          # If the user passed an Array we should filter it with the list of available (authorized) objects.
+        #          #
+        #          # http://www.ruby-doc.org/core/classes/Array.html
+        #          # &
+        #          # Set Intersection—Returns a new array containing elements common to the two arrays, with no duplicates.
+        #          safe_what = what.clone
+        #          if what.is_a?(Array)
+        #            safe_ what = what & object_role_ids
+        #          end
+        #          # The big show. Let's call out F I N D !!!!!!
+        #          # INF FINFD FIWI FFIND IF FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
+        #          if safe_what.eql?(:all)
+        #            ret = klazz.find(:all, my_find_options)
+        #          elsif safe_what.eql?(:first)
+        #            ret = klazz.find(object_role_ids.first, my_find_options)
+        #          elsif safe_what.eql?(:last)
+        #            ret = klazz.find(object_role_ids.last, my_find_options)
+        #          else
+        #            ret = klazz.find(safe_what, my_find_options)
+        #          end
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
+        #        end
       end
 
       ret

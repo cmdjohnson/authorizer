@@ -130,9 +130,11 @@ That's it!
 
 == DEVELOPERS:
 
-Reviews, patches and bug tickets are welcome!
+Reviews, patches and bug tickets are welcome! There's still some features that need to be implemented:
+ - (Multiple) roles for users on an object
+ - Rails 3 support!
 
-{authorizer_project}[https://github.com/cmdjohnson/authorizer_project] is a sample project that shows the usage of the Authorizer gem. It also contains all tests for your testing pleasure.
+{authorizer_project}[https://github.com/cmdjohnson/authorizer_project] is a sample project that shows the usage of the Authorizer gem. It also contains all unit and functional tests for your testing pleasure.
 
 == LICENSE:
 
