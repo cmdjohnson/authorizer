@@ -120,8 +120,7 @@ module Authorizer
     ############################################################################
     # find
     ############################################################################
-    # Out of the collection of all Posts, return the subset that belongs to the current user.
-    # External method that maps to the internal_find which is the generic find method.
+    # From the entire collection of Posts, return the subset that belongs to the current user.
     #
     # Arguments:
     #  - class_name: which class to use, e.g. "Post"
