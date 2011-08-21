@@ -100,9 +100,6 @@ Optional:
 
 == INSTALL:
 
-Installation
-===
-
  1. sudo gem install authorizer
  2. add "authorizer" to your Gemfile (I hope you've stopped using config.gem already even if you are on Rails 2.3?)
  3. generate a migration for authorization objects:
