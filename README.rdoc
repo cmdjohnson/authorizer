@@ -93,7 +93,7 @@ Authorizer uses ActiveRecord observers to make sure it doesn't make any mess, fo
 
  - Ruby (this gem was tested with 1.8.7)
  - Rails 2.3 (tested with 2.3.11 and 2.3.12)
- - Authlogic (for authentication)
+ - An authentication mechanism such as Authlogic for authentication (tested with authlogic 2.1.6)
 
 Optional:
  - inherited_resources if you want to use the controller filters supplied with this gem. Otherwise, you'll have to check for authorization yourself.
