@@ -17,49 +17,48 @@ class ApplicationController < ActionController::Base
 
   private
 
-  ##############################################################################
-  # authorizer
-  ##############################################################################
+  # Own an object (you've just created)
+  # With no arguments given, this method will try to use inherited_resources to determine the object you've just created.
+  # The object can be overridden with :object => object
+  def own_created_object(options = {})
+    ret = false # default answer: don't allow
 
-  def own_created_object
-    ret = true # always return true otherwise the filter chain would be blocked.
+    r = options[:object]
 
     begin
-      r = resource
+      r ||= resource
     rescue
     end
 
     unless r.nil?
       # only if this objet was successfully created will we do this.
       unless r.new_record?
-        Authorizer::Base.authorize_user( :object => r )
+        ret = Authorizer::Base.authorize_user( :object => r )
       end
     end
 
     ret
   end
 
-  def authorize
+  # Authorize on the current object.
+  # With no arguments given, this method will try to use inherited_resources to determine the object you're supposed to authorize on.
+  # The object can be overridden with :object => object
+  def authorize(options = {})
     ret = false # return false by default, effectively using a whitelist method.
 
+    r = options[:object]
+
     begin
-      r = resource
+      r ||= resource
     rescue      
     end
 
     unless r.nil?
-      auth = Authorizer::Base.user_is_authorized?( :object => r )
-
-      if auth.eql?(false)
-        raise Authorizer::UserNotAuthorized.new("You are not authorized to access this resource.")
-      end
+      # Use the bang method, it will raise an Exception if needed
+      ret = Authorizer::Base.authorize!( :object => r )
     end
 
     ret
   end
-
-  ##############################################################################
-  # end authorizer
-  ##############################################################################
 end
 

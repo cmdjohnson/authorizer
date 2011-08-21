@@ -45,13 +45,15 @@ Handles authorization for you.
 Authorize a user on an object
 
  Authorizer::Base.authorize_user( :object => object )
-
  => true/false
 
 If you want to know if the current user is authorized on an object, use:
 
- Authorizer::Base.user_is_authorized?( :object => object)
+ Authorizer::Base.user_is_authorized?( :object => object )
  => true/false
+
+ Authorizer::Base.authorize!( :object => object, :message => "You are not authorized to access this resource." ) # message is optional
+ => returns true or raises Authorizer::UserNotAuthorized
  
 Remove authorization from an object
 
@@ -125,6 +127,16 @@ Paste this code into the newly generated file:
  end
 
  4. run "rake db:migrate" to migrate your database
+ 5. Add these lines to your app/controllers/application_controller.rb:
+
+  require 'authorizer/exceptions'
+
+  rescue_from Authorizer::UserNotAuthorized do |exception|
+    # Show a static 403 page upon authorization failure
+    render :file => "#{Rails.root}/public/403.html", :status => 403
+  end
+
+ 6. Download the file public/403.html from {authorizer_project}[https://github.com/cmdjohnson/authorizer_project] and copy it to your own app.
  
 That's it!
 

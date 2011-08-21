@@ -40,11 +40,35 @@ module Authorizer
         object_reference = object.id
 
         ObjectRole.create!( :klazz_name => klazz_name, :object_reference => object_reference, :user => user, :role => role )
-        Rails.logger.debug("Authorizer: created authorization on #{object} for current_user with ID #{user.id} witih role #{role}")
+        Rails.logger.debug("Authorizer: created authorization on #{object} for current_user with ID #{user.id} with role #{role}")
         ret = true
       end
 
       ret
+    end
+
+    ############################################################################
+    # authorize!
+    #
+    # Bang version of authorize
+    ############################################################################
+
+    def self.authorize! options = {}
+      auth_ok = user_is_authorized?(options)
+
+      # User can override error message
+      message = options[:message]
+      # Attempt to fetch from I18n
+      begin
+        message ||= I18n.translate!("authorizer.access_denied")
+      rescue
+      end
+      # Default error message
+      message ||= "You are not authorized to access this resource."
+
+      raise Authorizer::UserNotAuthorized.new(message) unless auth_ok
+
+      auth_ok
     end
 
     ############################################################################
@@ -53,7 +77,7 @@ module Authorizer
     # If no user is specified, current_user is used.
     ############################################################################
 
-    def self.user_is_authorized? options
+    def self.user_is_authorized? options = {}
       OptionsChecker.check(options, [ :object ])
 
       ret = false
@@ -78,10 +102,15 @@ module Authorizer
       if ret
         Rails.logger.debug("Authorizer: authorized current_user with ID #{user.id} to access #{or_.description} because of role #{or_.role}") unless user.nil? || or_.nil?
       else
-        Rails.logger.debug("Authorizer: authorization failed for current_user with ID #{user.id} to access #{object.to_s}") unless user.nil? || object.nil?
+        Rails.logger.debug("Authorizer: authorization failed for current_user with ID #{user.id} to access #{object.inspect}") unless user.nil? || object.nil?
       end
 
       ret
+    end
+
+    # Could't get alias_method to work. Don't ask me why.
+    def self.authorize(options = {})
+      user_is_authorized?(options)
     end
 
     ############################################################################
@@ -138,8 +167,6 @@ module Authorizer
 
     ############################################################################
     # is_authorized?
-    #
-    # Checks if the corresponding role.eql?("owner")
     ############################################################################
 
     def self.is_authorized? object
@@ -246,55 +273,6 @@ module Authorizer
             ret = klazz.scoped_by_id(object_role_ids).find(what, my_find_options) # scoped_by is new in 2.3. sweeeeeeeeeeeet
           end
         end
-
-        #        # Let's go
-        #        unless object_roles.nil?
-        #          # Make it at least an array if object_role_ids returns nil
-        #          object_role_ids ||= []
-        #          # Get a list of IDs. These are objects that are owned by the current_user
-        #          object_role_ids = object_roles.collect { |or_| or_.object_reference } # [ 1, 1, 1, 1 ]
-        #          # Prepare find_options
-        #          leading_find_options = {} # insert conventions here if needed
-        #          my_find_options = find_options.merge(leading_find_options)
-        #          # If the user passed an Array we should filter it with the list of available (authorized) objects.
-        #          #
-        #          # http://www.ruby-doc.org/core/classes/Array.html
-        #          # &
-        #          # Set Intersection—Returns a new array containing elements common to the two arrays, with no duplicates.
-        #          safe_what = what.clone
-        #          if what.is_a?(Array)
-        #            safe_ what = what & object_role_ids
-        #          end
-        #          # The big show. Let's call out F I N D !!!!!!
-        #          # INF FINFD FIWI FFIND IF FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          # FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND FIND
-        #          if safe_what.eql?(:all)
-        #            ret = klazz.find(:all, my_find_options)
-        #          elsif safe_what.eql?(:first)
-        #            ret = klazz.find(object_role_ids.first, my_find_options)
-        #          elsif safe_what.eql?(:last)
-        #            ret = klazz.find(object_role_ids.last, my_find_options)
-        #          else
-        #            ret = klazz.find(safe_what, my_find_options)
-        #          end
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #          # SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT???? SAFE WHAT????
-        #        end
       end
 
       ret
@@ -332,9 +310,18 @@ module Authorizer
     def self.check_user(user)
       ret = true
 
-      raise ArgumentError.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?" if user.nil?
-      raise ArgumentError.new "User must inherit from ActiveRecord::Base" unless user.is_a?(ActiveRecord::Base)
-      raise ArgumentError.new "User must be saved" if user.new_record?
+      if user.nil?
+        raise Authorizer::RuntimeException.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?"
+      end
+
+      unless user.is_a?(ActiveRecord::Base)
+        raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
+
+      end
+
+      if user.new_record?
+        raise Authorizer::RuntimeException.new "User must be saved"
+      end
 
       ret
     end
