@@ -1,8 +1,10 @@
-=== 0.0.2 2011-07-01
+=== 0.0.2 2011-08-22
 
+* Major enhancements:
+  * Find function wasn't working properly, a user would get a list of objects from another user. Also reworked its internals so all arguments are passed on to the ActiveRecord::Base find function. 
 * Minor enhancements:
   * Improved error messages.
-  * Fixed some small issues.
+  * Fixed some other bugs and quirks.
 
 === 0.0.1 2011-07-01
 
