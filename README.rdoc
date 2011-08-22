@@ -100,9 +100,9 @@ Optional:
 
 == INSTALL:
 
-1: sudo gem install authorizer
-2: add "authorizer" to your Gemfile (I hope you've stopped using config.gem already even if you are on Rails 2.3?)
-3: generate a migration for authorization objects:
+Step 1. sudo gem install authorizer
+Step 2. add "authorizer" to your Gemfile (I hope you've stopped using config.gem already even if you are on Rails 2.3?)
+Step 3. generate a migration for authorization objects:
 
  script/generate migration CreateObjectRoles
 
@@ -123,8 +123,8 @@ Paste this code into the newly generated file:
   drop_table :object_roles
  end
 
-4: run "rake db:migrate" to migrate your database
-5: Add these lines to your app/controllers/application_controller.rb:
+Step 4. run "rake db:migrate" to migrate your database
+Step 5. Add these lines to your app/controllers/application_controller.rb:
 
   require 'authorizer/exceptions'
 
@@ -133,7 +133,7 @@ Paste this code into the newly generated file:
     render :file => "#{Rails.root}/public/403.html", :status => 403
   end
 
-6: Download the file public/403.html from {authorizer_project}[https://github.com/cmdjohnson/authorizer_project] and copy it to your own app.
+Step 6. Download the file public/403.html from {authorizer_project}[https://github.com/cmdjohnson/authorizer_project] and copy it to your own app.
  
 That's it!
 
