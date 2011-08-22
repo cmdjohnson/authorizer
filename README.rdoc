@@ -101,7 +101,9 @@ Optional:
 == INSTALL:
 
 Step 1. sudo gem install authorizer
+
 Step 2. add "authorizer" to your Gemfile (I hope you've stopped using config.gem already even if you are on Rails 2.3?)
+
 Step 3. generate a migration for authorization objects:
 
  script/generate migration CreateObjectRoles
@@ -124,6 +126,7 @@ Paste this code into the newly generated file:
  end
 
 Step 4. run "rake db:migrate" to migrate your database
+
 Step 5. Add these lines to your app/controllers/application_controller.rb:
 
   require 'authorizer/exceptions'
