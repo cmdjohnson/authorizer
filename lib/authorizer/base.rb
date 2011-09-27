@@ -21,21 +21,26 @@ module Authorizer
     #  - :role
     #
     # Example: Authorizer::Base.authorize_user :object => object
-    def self.authorize_user(options)
-      OptionsChecker.check(options, [ :object ])
-
+    def self.authorize_user(options = {})
       ret = false
 
       object = options[:object]
       role = options[:role] || "owner"
       user = options[:user] || get_current_user
+      
+      # User can specify the object using a block, too.
+      if block_given?
+        object = yield
+      end
 
       return false if basic_check_fails?(options)
 
       check_user(user)
       # Checks done. Let's go.
 
-      or_ = find_object_role(object, user)
+      if !object.nil? && !user.nil?
+        or_ = find_object_role(object, user)
+      end
 
       # This time, we want it to be nil.
       if or_.nil? && !user.nil?
@@ -146,6 +151,25 @@ module Authorizer
         ret = true
       end
 
+      ret
+    end
+    
+    # From the entire collection of Posts in the database, return the number of Posts that belong to the current user.
+    # Returns nil upon failure, returns a positive integer or 0 on success.
+    def self.count(class_name, options = {})
+      ret = nil
+      
+      user = options[:user] || get_current_user
+      find_options = options[:find_options] || {}
+      
+      if !class_name.blank? && !user.blank?
+        begin
+          ret = Authorizer::Base.find(class_name, :all, find_options, { :user => user }).count
+        rescue => e
+          Rails.logger.warn("#{__FILE__}: #{__LINE__}: Failed to count objects for class_name '#{class_name}' for user #{user.inspect}. Error was: #{e}")
+        end
+      end
+      
       ret
     end
 
@@ -318,17 +342,17 @@ module Authorizer
       # Let the auth mechanism redirect the user if no user is present.
       # I think that's the proper way to do things.
 
-#      if user.nil?
-#        raise Authorizer::RuntimeException.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?"
-#      end
-#
-#      unless user.is_a?(ActiveRecord::Base)
-#        raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
-#      end
-#
-#      if user.new_record?
-#        raise Authorizer::RuntimeException.new "User must be saved"
-#      end
+      #      if user.nil?
+      #        raise Authorizer::RuntimeException.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?"
+      #      end
+      #
+      #      unless user.is_a?(ActiveRecord::Base)
+      #        raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
+      #      end
+      #
+      #      if user.new_record?
+      #        raise Authorizer::RuntimeException.new "User must be saved"
+      #      end
 
       ret
     end
