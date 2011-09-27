@@ -315,7 +315,6 @@ module Authorizer
 
       unless user.is_a?(ActiveRecord::Base)
         raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
-
       end
 
       if user.new_record?
