@@ -233,7 +233,7 @@ module Authorizer
           # No need to throw this exception here. Just log the error.
           # It would appear whenever Authorizer was used when a user isn't logged in. 
           # That just is too much ...
-          s = "Could not eval class '#{klazz}'. It presumably does not exist. Maybe you mistyped its name? Error was: #{e.inspect}"
+          s = "Could not eval class '#{class_name}'. It presumably does not exist. Maybe you mistyped its name? Error was: #{e.inspect}"
           #raise ArgumentError.new(s) if klazz.nil?
           Rails.logger.warn("#{__FILE__}: #{__LINE__}: " + s)
         end
