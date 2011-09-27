@@ -17,5 +17,29 @@ module Authorizer
         object_role.destroy
       end
     end
+    
+    # This is a Rails only feature:
+    # Single Table Inheritance (STI) is implemented using the Type column.
+    # The 'type' column contains the name of the subclass of the table the record is in.
+    # For example, Dog is a subclass of Animal.
+    # If we have a Dog object here that changes its 'type' to Animal, the ObjectRole must be updated to reflect the new class name.
+    def after_update(object)
+      type = object.try(:read_attribute, :type)
+      # Big chance the object doesn't even have the 'type' attribute. In that case, do nothing.
+      unless type.blank?
+        object_class_name = object.class.to_s
+        # This is how we gonna detect that the type has changed:
+        # object_class_name should be different than type.
+        unless type.eql?(object_class_name)
+          object_roles = ObjectRole.find_all_by_object(object)
+          # Walk through the object roles associated with this object
+          for object_role in object_roles
+            # update it!
+            # it should reflect the new type.
+            object_role.update_attributes!( :klazz_name => type )
+          end
+        end
+      end
+    end
   end
 end
