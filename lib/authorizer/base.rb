@@ -11,13 +11,16 @@ require 'authorizer/application_controller'
 
 module Authorizer
   class Base < ApplicationController
-    ############################################################################
-    # authorize_user
+    # Authorize the current user (retrieved by calling current_user on the object passed using the :object parameter.
+    # The user can also be explicly spcified using :user.
+    # If no :role is specified, "owner" is used.
+    # 
+    # Params:
+    #  - :user (default: current_user)
+    #  - :object
+    #  - :role
     #
-    # If no user is specified, authorizes the current user.
-    # If no role is specified, "owner" is used as role.
-    ############################################################################
-
+    # Example: Authorizer::Base.authorize_user :object => object
     def self.authorize_user(options)
       OptionsChecker.check(options, [ :object ])
 
@@ -47,12 +50,10 @@ module Authorizer
       ret
     end
 
-    ############################################################################
-    # authorize!
-    #
-    # Bang version of authorize
-    ############################################################################
-
+    # Return true if a user is authorized to act upon this object. Raises Authorizer::UserNotAuthorized upon failure. 
+    # Params:
+    # - :user (default: current_user)
+    # - :object
     def self.authorize! options = {}
       auth_ok = user_is_authorized?(options)
 
@@ -71,12 +72,10 @@ module Authorizer
       auth_ok
     end
 
-    ############################################################################
-    # user_is_authorized?
-    #
-    # If no user is specified, current_user is used.
-    ############################################################################
-
+    # Return true if a user is authorized to act upon this object. Return false if this is not the case.
+    # Params:
+    # - :user (default: current_user)
+    # - :object
     def self.user_is_authorized? options = {}
       OptionsChecker.check(options, [ :object ])
 
@@ -108,17 +107,19 @@ module Authorizer
       ret
     end
 
-    # Could't get alias_method to work. Don't ask me why.
+    # Return true if a user is authorized to act upon this object. Return false if this is not the case.
+    # Synonym for user_is_authorized?
+    # Params:
+    # - :user (default: current_user)
+    # - :object
     def self.authorize(options = {})
-      user_is_authorized?(options)
+      user_is_authorized?(options) # Could't get alias_method to work. Don't ask me why.
     end
 
-    ############################################################################
-    # remove_authorization
-    ############################################################################
-    # Remove authorization a user has on a certain object.
-    ############################################################################
-
+    # Remove authorization from a certain object. Returns true upon success and false upon failure.
+    # Params:
+    # - :user (default: current_user)
+    # - :object
     def self.remove_authorization options = {}
       OptionsChecker.check(options, [ :object ])
 
@@ -146,9 +147,6 @@ module Authorizer
       ret
     end
 
-    ############################################################################
-    # find
-    ############################################################################
     # From the entire collection of Posts, return the subset that belongs to the current user.
     #
     # Arguments:
@@ -156,8 +154,6 @@ module Authorizer
     #  - what: will be passed on to the ActiveRecord find function (e.g. Post.find(what))
     #  - find_options: will also be passed on (e.g. Post.find(what, find_options))
     #  - authorizer_options: options for authorizer, e.g. { :user => @user }
-    ############################################################################
-
     def self.find(class_name, what, find_options = {}, authorizer_options = {})
       options = { :class_name => class_name, :what => what, :find_options => find_options }
       my_options = authorizer_options.merge(options) # options overrides user-specified options.
@@ -165,20 +161,15 @@ module Authorizer
       internal_find(my_options)
     end
 
-    ############################################################################
-    # is_authorized?
-    ############################################################################
-
+    # Return true if a user is authorized to act upon this object. Return false if this is not the case.
+    # Synonym for user_is_authorized
+    # 
+    # This method's only parameter is the object to be checked for authorization so you don't have to type :object => object.
     def self.is_authorized? object
       user_is_authorized? :object => object
     end
 
-    ############################################################################
-    # create_ownership
-    #
-    # ObjectRole.create!( :klazz_name => object.class.to_s, :object_reference => object.id, :user => current_user, :role => "owner" )
-    ############################################################################
-
+    # Shortcut for user_is_authorized. Takes the actual object as a parameter instead of a Hash.
     def self.create_ownership object
       ret = false
 
@@ -233,11 +224,19 @@ module Authorizer
       # Get the real klazz
       klazz = nil
       # Check it
-      begin
-        klazz = eval(class_name)
-      rescue => e
-        # Throw an exception if klazz is nil
-        raise ArgumentError.new("Could not eval class '#{klazz}'. It presumably does not exist. Maybe you mistyped its name? Error was: #{e.inspect}") if klazz.nil?
+      # Ok, Check it ... but ...
+      # If no user is found, let's leave it up to the auth solution to redirect the user to a login page.
+      unless user.nil?
+        begin
+          klazz = eval(class_name)
+        rescue => e
+          # No need to throw this exception here. Just log the error.
+          # It would appear whenever Authorizer was used when a user isn't logged in. 
+          # That just is too much ...
+          s = "Could not eval class '#{klazz}'. It presumably does not exist. Maybe you mistyped its name? Error was: #{e.inspect}"
+          #raise ArgumentError.new(s) if klazz.nil?
+          Rails.logger.warn("#{__FILE__}: #{__LINE__}: " + s)
+        end
       end
       # oooo ooo ooo ___ --- === __- --_- ++_+_ =--- +- =+=-=- =-=    <--- ice beam!
       unless klazz.nil?
