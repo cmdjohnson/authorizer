@@ -134,7 +134,9 @@ module Authorizer
       check_user(user)
       # Checks done. Let's go.
 
-      or_ = find_object_role(object, user)
+      unless user.nil?
+        or_ = find_object_role(object, user)
+      end
 
       unless or_.nil?
         Rails.logger.debug("Authorizer: removed authorization for user ID #{user.id} on #{or_.description}")
@@ -277,6 +279,7 @@ module Authorizer
       ret
     end
 
+    # Find the ObjectRole record that matches object (first argument) and user (second argument).
     def self.find_object_role(object, user)
       return nil if object.nil? || user.nil?
 
@@ -308,18 +311,24 @@ module Authorizer
 
     def self.check_user(user)
       ret = true
+      
+      # YES YES I know it's a good habit to check for current_user, but I've decided not to raise anything 
+      # and make this method basically void.
+      # Why?
+      # Let the auth mechanism redirect the user if no user is present.
+      # I think that's the proper way to do things.
 
-      if user.nil?
-        raise Authorizer::RuntimeException.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?"
-      end
-
-      unless user.is_a?(ActiveRecord::Base)
-        raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
-      end
-
-      if user.new_record?
-        raise Authorizer::RuntimeException.new "User must be saved"
-      end
+#      if user.nil?
+#        raise Authorizer::RuntimeException.new "User cannot be nil. Maybe you should specify authorizer_options = { :user => user } if you are not calling from a controller?"
+#      end
+#
+#      unless user.is_a?(ActiveRecord::Base)
+#        raise Authorizer::RuntimeException.new "User must inherit from ActiveRecord::Base"
+#      end
+#
+#      if user.new_record?
+#        raise Authorizer::RuntimeException.new "User must be saved"
+#      end
 
       ret
     end
