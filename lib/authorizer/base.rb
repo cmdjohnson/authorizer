@@ -207,6 +207,55 @@ module Authorizer
     end
 
     protected
+    
+    ############################################################################
+    # get_topmost_class
+    ############################################################################
+    # Get the topmost class for the given class, not going higher up the tree
+    # than ActiveRecord::Base or Object
+    ############################################################################
+    
+    def self.get_topmost_class(klazz)
+      raise "Please provide me with a Class object." unless klazz.is_a?(Class)
+      
+      top_klazz = klazz
+      next_top_klazz = nil
+      
+      begin
+        next_top_klazz = top_klazz.superclass
+      rescue
+      end
+      
+      if next_top_klazz
+        until next_top_klazz.eql?(ActiveRecord::Base) || next_top_klazz.eql?(Object)
+          top_klazz = next_top_klazz
+          next_top_klazz = top_klazz.superclass
+        end
+      end
+      
+      top_klazz
+    end
+    
+    ############################################################################
+    # array_of_string_subclasses
+    ############################################################################
+    # Call the protected 'subclasses' method and convert all class names to string.
+    ############################################################################
+    
+    def self.array_of_string_subclasses(klazz)
+      raise "Need a Class object." unless klazz.is_a?(Class)
+      
+      ret = []
+      
+      for c in klazz.subclasses
+        ret.push(c.to_s)
+      end
+      
+      # Also, we must include the class itself.
+      ret.push(klazz.to_s)
+      
+      ret
+    end
 
     ############################################################################
     # get_current_user
@@ -267,10 +316,14 @@ module Authorizer
       # oooo ooo ooo ___ --- === __- --_- ++_+_ =--- +- =+=-=- =-=    <--- ice beam!
       unless klazz.nil?
         # now we know klazz really exists.
+        # This class might be some subclass. Let's find out what the topmost class is.
+        topmost_class = get_topmost_class(klazz)
+        # Get an array that contains all subclasses of the topmost class
+        subclasses_of_topmost_class = array_of_string_subclasses(topmost_class)
         # let's find the object_role objects that match the user and klazz.
         # Get the object_role objects
-        object_roles_conditions = { :klazz_name => class_name, :user_id => user.id }
-        object_roles = ObjectRole.find(:all, :conditions => object_roles_conditions )
+        object_roles_conditions = { :user_id => user.id }
+        object_roles = ObjectRole.find_all_by_klazz_name(subclasses_of_topmost_class, :conditions => object_roles_conditions )
         # OK.
         # We already have the comprehensive list of object roles we are authorized on.
         unless object_roles.nil?
