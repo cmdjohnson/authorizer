@@ -36,9 +36,31 @@ Now if we would allow Bob to also access the News folder but only read from it, 
 
 This is exactly what Authorizer does for your Rails application.
 
-== FEATURES/PROBLEMS:
+== PROBLEMS:
 
-Handles authorization for you.
+In development mode, classes are lazy loaded. This will cause Authorizer to not find all subclasses of your class the *second* time you load any page with your development mode server. In development mode, subclasses are loaded ONLY when they are included, so a given class could not have any children at a given time even though you might have defined some! AFAIK there are two possible solutions: 1) reload the subclasses at runtime (workaround) or 2) persist the object hierarchy (comes with synchronisation problems).
+
+For development mode, use this workaround:
+
+ class LegalEntity
+  def self.my_subclasses
+    [ "Company", "Foundation", "Person" ]
+  end
+  
+  if Rails.env.development?
+    LegalEntity.my_subclasses.each do |sc|
+      require_dependency File.join("app", "models", "#{sc.downcase}.rb")
+    end
+  end
+ end
+
+In other words, when using Authorizer with Single Table Inheritance (STI), you must include the above code snippet in any class that has subclasses and is subject to authorization.
+
+More material on this subject:
+http://code.alexreisner.com/articles/single-table-inheritance-in-rails.html
+http://sean-carley.blogspot.com/2006/05/when-rails-needs-clue-single-table.html
+
+The 'lazy loading of subclasses' only pertains to development mode, not to production and test.
 
 == SYNOPSIS:
 
@@ -92,7 +114,7 @@ Authorizer uses ActiveRecord observers to make sure it doesn't make any mess, fo
 == REQUIREMENTS:
 
  - Ruby (this gem was tested with 1.8.7)
- - Rails 2.3 (tested with 2.3.11 and 2.3.12)
+ - Rails 2.3 (tested with 2.3.11 and 2.3.12 and 2.3.14)
  - An authentication mechanism such as Authlogic for authentication (tested with authlogic 2.1.6)
 
 Optional:
