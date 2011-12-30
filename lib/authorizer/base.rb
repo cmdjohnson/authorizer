@@ -283,11 +283,17 @@ module Authorizer
     ############################################################################
 
     def self.internal_find(options = {})
-      # Options
-      OptionsChecker.check(options, [ :what, :class_name ])
+      # what is not mandatory anymore. If for example nil is specified, that's completely OK
+      # because ActiveRecord::Base will then raise for us.
+      #OptionsChecker.check(options, [ :what, :class_name ])
+      OptionsChecker.check(options, [ :class_name ])
 
-      # assign
-      class_name = options[:class_name]
+      # Normally the class name would have to be specified as a String.
+      # e.g. Authorizer::Base.find("Post", ...)
+      # Convert it to String always so it will be picked up by the begin rescue end right underneath here.
+      # So we can use this:
+      # Authorizer::Base.find(Post) as well.
+      class_name = options[:class_name].to_s
       what = options[:what]
       find_options = options[:find_options] || {}
       user = options[:user] || get_current_user # Default is current user, but the specified user will override.
