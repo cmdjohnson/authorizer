@@ -205,6 +205,21 @@ module Authorizer
 
       ret
     end
+    
+    # Find the user that owns this object, if any.
+    # Returns the owning User object, or nil.
+    def self.find_user_for_object(obj)
+      ret = nil
+      object_role = nil
+      
+      begin
+        object_role = ObjectRole.find(:first, :conditions => { :klazz_name => obj.class.to_s, :object_reference => obj.id })
+        ret = User.find(object_role.user_id)
+      rescue
+      end
+      
+      ret
+    end
 
     protected
     
